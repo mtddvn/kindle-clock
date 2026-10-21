@@ -12,6 +12,32 @@
     color: #000000;
     font-family: Helvetica, Arial, sans-serif;
     height: 100%;
+    overflow: hidden;
+  }
+  #stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    -webkit-transform-origin: center center;
+    transform-origin: center center;
+  }
+  #controls {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+  }
+  #rotateBtn {
+    background: #ffffff;
+    color: #000000;
+    border: 3px solid #000000;
+    font-size: 26px;
+    font-family: Helvetica, Arial, sans-serif;
+    padding: 8px 14px;
+  }
+  body.inverted #rotateBtn {
+    background: #000000;
+    color: #ffffff;
+    border-color: #ffffff;
   }
   body.inverted {
     background: #000000;
@@ -55,13 +81,16 @@
 </style>
 </head>
 <body>
-<div id="wrap">
-  <div id="weekday">—</div>
-  <div id="clock">--:--</div>
-  <div id="date">—</div>
-  <hr class="sep">
-  <div id="lunar">—</div>
-  <div id="seconds"></div>
+<div id="stage">
+  <div id="wrap">
+    <div id="weekday">—</div>
+    <div id="clock">--:--</div>
+    <div id="date">—</div>
+    <hr class="sep">
+    <div id="lunar">—</div>
+    <div id="seconds"></div>
+  </div>
+  <div id="controls"><button id="rotateBtn" type="button">Xoay: 0&deg;</button></div>
 </div>
 
 <script>
@@ -184,8 +213,40 @@ var CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "T
 
 function pad(n) { return (n < 10 ? "0" : "") + n; }
 
-function fitText() {
+/* ===== Rotation (0 / 90 / 180 / 270 degrees) ===== */
+var rot = 0;
+try {
+  rot = parseInt(window.localStorage.getItem("kc_rot") || "0", 10) || 0;
+  if (rot !== 0 && rot !== 90 && rot !== 180 && rot !== 270) { rot = 0; }
+} catch (e) { rot = 0; }
+
+function stageWidth() {
+  if (rot === 90 || rot === 270) { return window.innerHeight || 1448; }
+  return window.innerWidth || 1072;
+}
+
+function applyRotation() {
   var w = window.innerWidth || 1072;
+  var h = window.innerHeight || 1448;
+  var stage = document.getElementById("stage");
+  if (rot === 90 || rot === 270) {
+    stage.style.width = h + "px";
+    stage.style.height = w + "px";
+    stage.style.left = Math.floor((w - h) / 2) + "px";
+    stage.style.top = Math.floor((h - w) / 2) + "px";
+  } else {
+    stage.style.width = w + "px";
+    stage.style.height = h + "px";
+    stage.style.left = "0px";
+    stage.style.top = "0px";
+  }
+  stage.style.webkitTransform = "rotate(" + rot + "deg)";
+  stage.style.transform = "rotate(" + rot + "deg)";
+  document.getElementById("rotateBtn").innerHTML = "Xoay: " + rot + "&deg;";
+}
+
+function fitText() {
+  var w = stageWidth();
   var clock = document.getElementById("clock");
   clock.style.fontSize = Math.floor(w * 0.34) + "px";
 }
@@ -222,7 +283,18 @@ function render() {
   setTimeout(render, msToNextMinute);
 }
 
-window.onresize = fitText;
+document.getElementById("rotateBtn").onclick = function () {
+  rot = (rot + 90) % 360;
+  try { window.localStorage.setItem("kc_rot", "" + rot); } catch (e) {}
+  applyRotation();
+  fitText();
+};
+
+window.onresize = function () {
+  applyRotation();
+  fitText();
+};
+applyRotation();
 fitText();
 render();
 </script>
